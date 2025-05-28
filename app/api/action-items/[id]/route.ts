@@ -16,11 +16,12 @@ const ACTION_ITEMS = [
   // ... other action items
 ]
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 300))
 
-  const actionItem = ACTION_ITEMS.find((item) => item.id === params.id)
+  const { id } = await params
+  const actionItem = ACTION_ITEMS.find((item) => item.id === id)
 
   if (!actionItem) {
     return NextResponse.json({ message: "Action item not found" }, { status: 404 })
@@ -29,12 +30,13 @@ export async function GET(request: Request, { params }: { params: { id: string }
   return NextResponse.json({ actionItem })
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const data = await request.json()
+    const { id } = await params
 
     // Find the action item
-    const actionItem = ACTION_ITEMS.find((item) => item.id === params.id)
+    const actionItem = ACTION_ITEMS.find((item) => item.id === id)
 
     if (!actionItem) {
       return NextResponse.json({ message: "Action item not found" }, { status: 404 })

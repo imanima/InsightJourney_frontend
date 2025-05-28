@@ -26,11 +26,11 @@ export default function ActionItemsPage() {
     const fetchActionItems = async () => {
       try {
         setIsLoading(true)
-        const response = await actionItemsAPI.getActionItems()
+        const response = await actionItemsAPI.getAllActionItems()
 
         // Check if response and actionItems exist before setting state
-        if (response && response.actionItems) {
-          setActionItems(response.actionItems)
+        if (response && response.data && (response.data as any).actionItems) {
+          setActionItems((response.data as any).actionItems)
         } else {
           // If actionItems is undefined, set an empty array
           setActionItems([])
@@ -66,8 +66,8 @@ export default function ActionItemsPage() {
         }),
       )
 
-      // Send the update to the API
-      await actionItemsAPI.updateActionItem(id, { status: newStatus })
+      // Send the update to the API - use sessionId from the item
+      await actionItemsAPI.updateActionItem(item.sessionId, id, { status: newStatus })
     } catch (err) {
       console.error("Failed to update action item:", err)
       // Revert the UI change if the API call fails
@@ -81,7 +81,10 @@ export default function ActionItemsPage() {
     }
 
     try {
-      await actionItemsAPI.deleteActionItem(id)
+      const item = actionItems.find((item) => item.id === id)
+      if (!item) return
+
+      await actionItemsAPI.deleteActionItem(item.sessionId, id)
 
       // Remove the item from the UI
       setActionItems((prev) => prev.filter((item) => item.id !== id))

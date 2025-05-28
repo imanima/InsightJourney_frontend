@@ -20,7 +20,7 @@ export default function AuthTestPage() {
       const result = await login(email, password)
 
       if (!result.success) {
-        setError(result.error || "Login failed")
+        setError(result.message || "Login failed")
       }
     } catch (err) {
       console.error("Login error:", err)

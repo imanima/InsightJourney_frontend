@@ -5,18 +5,20 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Heart, Loader2, Brain, BarChart2, PieChart, LineChart } from "lucide-react"
+import { Calendar, Heart, Loader2, Brain, BarChart2, PieChart, LineChart, Trash2 } from "lucide-react"
 import MobileLayout from "@/components/mobile-layout"
 import { insightsAPI, sessionsAPI } from "@/lib/api-client"
 import InsightsOverviewAnalytics from "@/components/insights-overview-analytics"
 import EmotionPieChart from "@/components/emotion-pie-chart"
 import EmotionTrendsChart from "@/components/emotion-trends-chart"
+import { toast } from "react-hot-toast"
 
 export default function InsightsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sessions, setSessions] = useState<any[]>([])
   const [insights, setInsights] = useState<any[]>([])
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -74,6 +76,34 @@ export default function InsightsPage() {
 
   const handleSessionClick = (sessionId: string) => {
     router.push(`/insights/${sessionId}`)
+  }
+
+  const handleDeleteSession = async (sessionId: string, sessionTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${sessionTitle}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setDeletingSessionId(sessionId)
+      toast.loading('Deleting session...', { id: 'delete-session' })
+
+      const response = await sessionsAPI.deleteSession(sessionId)
+      
+      if (response.error) {
+        throw new Error(response.error)
+      }
+
+      // Remove the session from the local state
+      setSessions(prevSessions => prevSessions.filter(session => session.id !== sessionId))
+      
+      toast.success('Session deleted successfully', { id: 'delete-session' })
+    } catch (error) {
+      console.error('Error deleting session:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete session'
+      toast.error(errorMessage, { id: 'delete-session' })
+    } finally {
+      setDeletingSessionId(null)
+    }
   }
 
   if (isLoading) {
@@ -171,6 +201,19 @@ export default function InsightsPage() {
                           >
                             View Analysis
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500"
+                            onClick={() => handleDeleteSession(sessionId, session.title || `Session ${session.id}`)}
+                            disabled={deletingSessionId === sessionId}
+                          >
+                            {deletingSessionId === sessionId ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
                         </div>
                       </div>
 
@@ -181,7 +224,7 @@ export default function InsightsPage() {
                             <Heart className="h-3 w-3 mr-1 text-red-500" />
                             <span className="font-medium text-sm">Emotions:</span>
                             <div className="flex flex-wrap gap-1 ml-2">
-                              {emotionsToShow.map((emotion, index) => (
+                              {emotionsToShow.map((emotion: any, index: number) => (
                                 <Badge key={index} variant="outline" className="text-xs bg-red-50 text-red-700">
                                   {emotion.name || emotion.emotion || 'Unknown'}
                                 </Badge>

@@ -1109,6 +1109,11 @@ export const userAPI = {
 
 // Action Items API
 export const actionItemsAPI = {
+  // Get all action items for the current user across all sessions
+  getAllActionItems() {
+    return fetchAPI("/action-items")
+  },
+
   // Get all action items for a session
   getActionItems(sessionId: string) {
     return fetchAPI(`/sessions/${sessionId}/action-items`)
@@ -1501,4 +1506,142 @@ export interface TranscriptionRequest {
 
 export interface AnalysisRequest {
   transcript: string
+}
+
+// Settings API
+export const settingsAPI = {
+  // User settings
+  getUserSettings: async (): Promise<any> => {
+    const token = getAuthToken()
+    if (!token) throw new Error('No authentication token')
+
+    const response = await fetch(`${API_BASE_URL}/settings/user`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to get user settings: ${response.statusText}`)
+    }
+
+    return response.json()
+  },
+
+  updateUserSettings: async (settings: any): Promise<any> => {
+    const token = getAuthToken()
+    if (!token) throw new Error('No authentication token')
+
+    const response = await fetch(`${API_BASE_URL}/settings/user`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to update user settings: ${response.statusText}`)
+    }
+
+    return response.json()
+  },
+
+  // Admin settings (admin only)
+  getAdminSettings: async (): Promise<any> => {
+    const token = getAuthToken()
+    if (!token) throw new Error('No authentication token')
+
+    const response = await fetch(`${API_BASE_URL}/settings/admin`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to get admin settings: ${response.statusText}`)
+    }
+
+    return response.json()
+  },
+
+  updateAdminSettings: async (settings: any): Promise<any> => {
+    const token = getAuthToken()
+    if (!token) throw new Error('No authentication token')
+
+    const response = await fetch(`${API_BASE_URL}/settings/admin`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to update admin settings: ${response.statusText}`)
+    }
+
+    return response.json()
+  },
+
+  // Admin user management
+  getAllUsers: async (): Promise<any> => {
+    const token = getAuthToken()
+    if (!token) throw new Error('No authentication token')
+
+    const response = await fetch(`${API_BASE_URL}/settings/admin/users`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to get users: ${response.statusText}`)
+    }
+
+    return response.json()
+  },
+
+  updateUser: async (userId: string, userData: any): Promise<any> => {
+    const token = getAuthToken()
+    if (!token) throw new Error('No authentication token')
+
+    const response = await fetch(`${API_BASE_URL}/settings/admin/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to update user: ${response.statusText}`)
+    }
+
+    return response.json()
+  },
+
+  getAdminStats: async (): Promise<any> => {
+    const token = getAuthToken()
+    if (!token) throw new Error('No authentication token')
+
+    const response = await fetch(`${API_BASE_URL}/settings/admin/stats`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to get admin stats: ${response.statusText}`)
+    }
+
+    return response.json()
+  },
 }

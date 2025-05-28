@@ -24,7 +24,7 @@ const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   const pathParams = await params;
   const path = pathParams.path.join('/');
@@ -59,7 +59,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   const pathParams = await params;
   const path = pathParams.path.join('/');
@@ -402,7 +402,7 @@ export async function POST(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   const pathParams = await params;
   const path = pathParams.path.join('/');
@@ -439,7 +439,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   const pathParams = await params;
   const path = pathParams.path.join('/');
