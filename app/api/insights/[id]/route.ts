@@ -5,12 +5,12 @@ const INSIGHTS = [
   {
     id: "1",
     type: "emotion",
-    content: "Joy when completing the project ahead of schedule",
-    topic: "Work",
+    content: "Feeling anxious about upcoming presentation",
+    topic: "Work Stress",
     timestamp: "2023-12-01T10:30:00Z",
     sessionId: "123",
     sessionTitle: "Weekly Check-in",
-    additionalInfo: "Intensity: 4/5, Trigger: Project completion",
+    additionalInfo: "Intensity: 7/10",
   },
   {
     id: "2",
@@ -25,11 +25,12 @@ const INSIGHTS = [
   // ... other insights
 ]
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 300))
 
-  const insight = INSIGHTS.find((i) => i.id === params.id)
+  const { id } = await params
+  const insight = INSIGHTS.find((item) => item.id === id)
 
   if (!insight) {
     return NextResponse.json({ message: "Insight not found" }, { status: 404 })

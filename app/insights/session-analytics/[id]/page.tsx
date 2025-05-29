@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,18 +9,18 @@ import MobileLayout from "@/components/mobile-layout"
 import EmotionAnalytics from "@/components/emotion-analytics"
 import { sessionsAPI } from "@/lib/api-client"
 
-export default function SessionAnalyticsPage({ params }: { params: { id: string } }) {
+export default function SessionAnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [session, setSession] = useState<any>(null)
   const router = useRouter()
-  const sessionId = params.id
+  const { id: sessionId } = use(params)
 
   useEffect(() => {
     const fetchSession = async () => {
       try {
         setIsLoading(true)
-        const sessionResponse = await sessionsAPI.getSessionById(Number(sessionId))
+        const sessionResponse = await sessionsAPI.getSessionById(sessionId)
 
         if (sessionResponse.data) {
           setSession(sessionResponse.data)

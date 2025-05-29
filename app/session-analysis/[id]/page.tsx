@@ -13,11 +13,80 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Heart, Brain, Flag, Mountain, Lightbulb, Save, ArrowLeft, Home, Plus, Edit, Trash2, CheckCircle, X } from "lucide-react"
+import { Heart, Brain, Flag, Mountain, Lightbulb, Save, ArrowLeft, Home, Plus, Edit, Trash2, CheckCircle, X, Play } from "lucide-react"
 import MobileLayout from "@/components/mobile-layout"
 import { toast } from "react-hot-toast"
 
 // Data types with consistent naming for API compatibility
+interface ApiEmotion {
+  id?: string
+  name?: string
+  emotion?: string
+  intensity?: string | number
+  topic?: string
+  topics?: string[]
+  timestamp?: string
+  context?: string
+  description?: string
+}
+
+interface ApiBelief {
+  id?: string
+  name?: string
+  text?: string
+  description?: string
+  belief?: string
+  impact?: string
+  topic?: string
+  topics?: string[]
+  timestamp?: string
+}
+
+interface ApiActionItem {
+  id?: string
+  name?: string
+  description?: string
+  text?: string
+  topic?: string
+  topics?: string[]
+  status?: string
+  timestamp?: string
+}
+
+interface ApiChallenge {
+  id?: string
+  name?: string
+  challenge?: string
+  text?: string
+  description?: string
+  impact?: string
+  severity?: string
+  topic?: string
+  topics?: string[]
+  timestamp?: string
+}
+
+interface ApiInsight {
+  id?: string
+  name?: string
+  insight?: string
+  text?: string
+  description?: string
+  context?: string
+  implications?: string
+  topic?: string
+  topics?: string[]
+  timestamp?: string
+}
+
+interface ApiSessionElements {
+  emotions?: ApiEmotion[]
+  beliefs?: ApiBelief[]
+  action_items?: ApiActionItem[]
+  challenges?: ApiChallenge[]
+  insights?: ApiInsight[]
+}
+
 interface Emotion {
   id?: string
   name: string
@@ -90,6 +159,7 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
   const [originalData, setOriginalData] = useState<SessionData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
   const [editingItems, setEditingItems] = useState<Set<string>>(new Set())
   const [hasChanges, setHasChanges] = useState(false)
   const { user } = useAuth()
@@ -126,22 +196,22 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
           throw new Error(`Failed to fetch session data: ${response.status} - ${response.error}`)
         }
         
-        const elementsData = response.data as any
+        const elementsData = response.data as ApiSessionElements
         console.log('Session elements data:', elementsData)
         
         // Transform API data to match our interface
         const transformedData: SessionData = {
           id: id,
           timestamp: new Date().toISOString(),
-          emotions: deduplicateElements(elementsData.emotions?.map((emotion: any, index: number) => ({
+          emotions: deduplicateElements(elementsData.emotions?.map((emotion: ApiEmotion, index: number) => ({
             id: emotion.id || `emo_${index}`, // Use stable, simple ID
             name: emotion.name || emotion.emotion || 'Unknown',
-            intensity: parseInt(emotion.intensity) || 0,
+            intensity: parseInt(emotion.intensity as string) || 0,
             topic: emotion.topic || emotion.topics?.[0] || 'General',
             timestamp: emotion.timestamp || new Date().toISOString(),
             context: emotion.context || emotion.description || '',
           })) || []),
-          beliefs: deduplicateElements(elementsData.beliefs?.map((belief: any, index: number) => ({
+          beliefs: deduplicateElements(elementsData.beliefs?.map((belief: ApiBelief, index: number) => ({
             id: belief.id || `bel_${index}`, // Use stable, simple ID
             name: belief.name || 'Untitled Belief',
             description: belief.text || belief.description || belief.belief || '',
@@ -149,7 +219,7 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
             topic: belief.topic || belief.topics?.[0] || 'General',
             timestamp: belief.timestamp || new Date().toISOString(),
           })) || []),
-          action_items: deduplicateElements(elementsData.action_items?.map((action: any, index: number) => ({
+          action_items: deduplicateElements(elementsData.action_items?.map((action: ApiActionItem, index: number) => ({
             id: action.id || `act_${index}`, // Use stable, simple ID
             name: action.name || 'Untitled Action',
             description: action.description || action.text || '',
@@ -157,7 +227,7 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
             status: action.status || 'Not Started',
             timestamp: action.timestamp || new Date().toISOString(),
           })) || []),
-          challenges: deduplicateElements(elementsData.challenges?.map((challenge: any, index: number) => ({
+          challenges: deduplicateElements(elementsData.challenges?.map((challenge: ApiChallenge, index: number) => ({
             id: challenge.id || `cha_${index}`, // Use stable, simple ID
             name: challenge.name || challenge.challenge || 'Untitled Challenge',
             description: challenge.text || challenge.description || '',
@@ -165,7 +235,7 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
             topic: challenge.topic || challenge.topics?.[0] || 'General',
             timestamp: challenge.timestamp || new Date().toISOString(),
           })) || []),
-          insights: deduplicateElements(elementsData.insights?.map((insight: any, index: number) => ({
+          insights: deduplicateElements(elementsData.insights?.map((insight: ApiInsight, index: number) => ({
             id: insight.id || `ins_${index}`, // Use stable, simple ID
             name: insight.name || insight.insight || 'Untitled Insight',
             description: insight.text || insight.description || '',
@@ -178,6 +248,23 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
         console.log('Transformed session data:', transformedData)
         setSessionData(transformedData)
         setOriginalData(JSON.parse(JSON.stringify(transformedData))) // Deep copy
+        
+        // Debug: Log analyze button conditions
+        const totalItems = transformedData.emotions.length + 
+                          transformedData.beliefs.length + 
+                          transformedData.action_items.length + 
+                          transformedData.challenges.length + 
+                          transformedData.insights.length
+        console.log('🔍 Analyze Button Debug:', {
+          emotions: transformedData.emotions.length,
+          beliefs: transformedData.beliefs.length,
+          actions: transformedData.action_items.length,
+          challenges: transformedData.challenges.length,
+          insights: transformedData.insights.length,
+          totalItems,
+          shouldShowAnalyze: totalItems <= 3,
+          shouldShowReanalyze: totalItems > 3
+        })
       } catch (error) {
         console.error('Error fetching session data:', error)
         toast.error('Failed to load session data')
@@ -272,11 +359,41 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
     }
   }, [sessionData, originalData])
 
-  const handleSave = async () => {
-    if (!sessionData || !hasChanges) return
+  const handleSave = async (forceDebug = false) => {
+    if (!sessionData) {
+      console.log('🔍 Save blocked: No session data')
+      return
+    }
+    
+    if (saving) {
+      console.log('🔍 Save blocked: Already saving')
+      return
+    }
+    
+    if (!hasChanges && !forceDebug) {
+      console.log('🔍 Save blocked: No changes detected', {
+        hasChanges,
+        sessionData: sessionData ? {
+          emotions: sessionData.emotions.length,
+          beliefs: sessionData.beliefs.length,
+          actions: sessionData.action_items.length,
+          challenges: sessionData.challenges.length,
+          insights: sessionData.insights.length
+        } : null,
+        originalData: originalData ? {
+          emotions: originalData.emotions.length,
+          beliefs: originalData.beliefs.length,
+          actions: originalData.action_items.length,
+          challenges: originalData.challenges.length,
+          insights: originalData.insights.length
+        } : null
+      })
+      return
+    }
 
     try {
       setSaving(true)
+      console.log('🔍 Starting save process...')
       
       // Format data for API - wrap elements in "elements" key to match backend UpdateElementsRequest model
       const updateData = {
@@ -316,59 +433,102 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
         }
       }
 
-      console.log('Saving update data:', updateData)
+      console.log('🔍 Saving update data:', updateData)
 
       const response = await sessionsAPI.updateSessionElements(id, updateData)
 
+      console.log('🔍 Save response:', response)
+
       if (response.error) {
-        console.error('Save failed:', response.error)
+        console.error('🔍 Save failed:', response.error)
         throw new Error(`Failed to save: ${response.status} - ${response.error}`)
       }
 
       const result = response.data
-      console.log('Save result:', result)
+      console.log('🔍 Save result:', result)
       
       toast.success('Analysis saved successfully!')
       setOriginalData(JSON.parse(JSON.stringify(sessionData))) // Update original data
       setEditingItems(new Set()) // Clear editing state
       
     } catch (error) {
-      console.error('Error saving session data:', error)
+      console.error('🔍 Error saving session data:', error)
       toast.error('Failed to save changes')
     } finally {
       setSaving(false)
     }
   }
 
-  const updateEmotion = (index: number, field: keyof Emotion, value: any) => {
+  const handleAnalyze = async () => {
+    if (!sessionData) return
+
+    try {
+      setAnalyzing(true)
+      toast.loading('Starting analysis...', { id: 'analyze' })
+
+      console.log('🔍 Starting analysis for session:', id)
+
+      // Try to start analysis for this session
+      const response = await sessionsAPI.startAnalysis(id)
+
+      console.log('🔍 Analysis response:', response)
+
+      if (response.error) {
+        console.error('🔍 Analysis error:', response.error)
+        
+        // If the error is about missing transcript, provide helpful guidance
+        if (response.error.includes("No transcript found") || response.error.includes("transcript")) {
+          toast.error("This session doesn't have a transcript yet. Please record or upload audio first.", { id: 'analyze' })
+          return
+        } else {
+          throw new Error(`Failed to start analysis: ${response.error}`)
+        }
+      }
+
+      toast.success('Analysis completed!', { id: 'analyze' })
+      
+      // Refresh the session data to get the new analysis
+      console.log('🔍 Analysis completed, refreshing page...')
+      window.location.reload()
+      
+    } catch (error) {
+      console.error('Error analyzing session:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to analyze session'
+      toast.error(errorMessage, { id: 'analyze' })
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  const updateEmotion = (index: number, field: keyof Emotion, value: string | number) => {
     if (!sessionData) return
     const newEmotions = [...sessionData.emotions]
     newEmotions[index] = { ...newEmotions[index], [field]: value }
     setSessionData({ ...sessionData, emotions: newEmotions })
   }
 
-  const updateBelief = (index: number, field: keyof Belief, value: any) => {
+  const updateBelief = (index: number, field: keyof Belief, value: string) => {
     if (!sessionData) return
     const newBeliefs = [...sessionData.beliefs]
     newBeliefs[index] = { ...newBeliefs[index], [field]: value }
     setSessionData({ ...sessionData, beliefs: newBeliefs })
   }
 
-  const updateActionItem = (index: number, field: keyof ActionItem, value: any) => {
+  const updateActionItem = (index: number, field: keyof ActionItem, value: string) => {
     if (!sessionData) return
     const newActionItems = [...sessionData.action_items]
     newActionItems[index] = { ...newActionItems[index], [field]: value }
     setSessionData({ ...sessionData, action_items: newActionItems })
   }
 
-  const updateChallenge = (index: number, field: keyof Challenge, value: any) => {
+  const updateChallenge = (index: number, field: keyof Challenge, value: string) => {
     if (!sessionData) return
     const newChallenges = [...sessionData.challenges]
     newChallenges[index] = { ...newChallenges[index], [field]: value }
     setSessionData({ ...sessionData, challenges: newChallenges })
   }
 
-  const updateInsight = (index: number, field: keyof Insight, value: any) => {
+  const updateInsight = (index: number, field: keyof Insight, value: string) => {
     if (!sessionData) return
     const newInsights = [...sessionData.insights]
     newInsights[index] = { ...newInsights[index], [field]: value }
@@ -974,19 +1134,153 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
             <h1 className="text-lg font-medium">Session Analysis</h1>
             {hasChanges && <Badge variant="outline" className="ml-2">Unsaved Changes</Badge>}
           </div>
-          <Button 
-            size="sm" 
-            onClick={handleSave} 
-            disabled={!hasChanges || saving}
-            className="flex items-center gap-1"
-          >
-            {saving ? (
-              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-            ) : (
-              <Save className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            {/* Show analyze button if session has no meaningful analysis data */}
+            {sessionData && (
+              // Show if completely empty OR if total analysis items are very few (likely failed/incomplete analysis)
+              (sessionData.emotions.length + 
+               sessionData.beliefs.length + 
+               sessionData.action_items.length + 
+               sessionData.challenges.length + 
+               sessionData.insights.length <= 5)
+            ) && (
+              <Button 
+                size="sm" 
+                onClick={handleAnalyze} 
+                disabled={analyzing}
+                className="flex items-center gap-1"
+                variant="outline"
+              >
+                {analyzing ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+                <span>{analyzing ? 'Analyzing...' : 'Analyze Session'}</span>
+              </Button>
             )}
-            <span>{saving ? 'Saving...' : 'Save'}</span>
-          </Button>
+            {/* Always show a re-analyze button if there's some data but user wants to re-run */}
+            {sessionData && (
+              sessionData.emotions.length + 
+              sessionData.beliefs.length + 
+              sessionData.action_items.length + 
+              sessionData.challenges.length + 
+              sessionData.insights.length > 5
+            ) && (
+              <Button 
+                size="sm" 
+                onClick={handleAnalyze} 
+                disabled={analyzing}
+                className="flex items-center gap-1"
+                variant="ghost"
+              >
+                {analyzing ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+                <span>{analyzing ? 'Re-analyzing...' : 'Re-analyze'}</span>
+              </Button>
+            )}
+            {/* Fallback: Always show analyze button for debugging */}
+            {!sessionData || (
+              sessionData.emotions.length + 
+              sessionData.beliefs.length + 
+              sessionData.action_items.length + 
+              sessionData.challenges.length + 
+              sessionData.insights.length === 0
+            ) ? (
+              <Button 
+                size="sm" 
+                onClick={handleAnalyze} 
+                disabled={analyzing}
+                className="flex items-center gap-1"
+                variant="default"
+              >
+                {analyzing ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+                <span>{analyzing ? 'Analyzing...' : 'Start Analysis'}</span>
+              </Button>
+            ) : null}
+            {/* Temporary debug button - always visible */}
+            <Button 
+              size="sm" 
+              onClick={() => {
+                console.log('🔍 Debug Session Data:', {
+                  sessionData,
+                  hasSessionData: !!sessionData,
+                  totalItems: sessionData ? (
+                    sessionData.emotions.length + 
+                    sessionData.beliefs.length + 
+                    sessionData.action_items.length + 
+                    sessionData.challenges.length + 
+                    sessionData.insights.length
+                  ) : 0
+                })
+                handleAnalyze()
+              }} 
+              disabled={analyzing}
+              className="flex items-center gap-1"
+              variant="secondary"
+            >
+              {analyzing ? (
+                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+              <span>{analyzing ? 'Debug Analyzing...' : 'Debug Analyze'}</span>
+            </Button>
+            <Button 
+              size="sm" 
+              onClick={() => handleSave(false)} 
+              disabled={!hasChanges || saving}
+              className="flex items-center gap-1"
+            >
+              {saving ? (
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span>{saving ? 'Saving...' : 'Save'}</span>
+            </Button>
+            {/* Temporary debug save button - always enabled */}
+            <Button 
+              size="sm" 
+              onClick={() => {
+                console.log('🔍 Debug Save clicked with state:', {
+                  hasChanges,
+                  sessionData: sessionData ? {
+                    emotions: sessionData.emotions.length,
+                    beliefs: sessionData.beliefs.length,
+                    actions: sessionData.action_items.length,
+                    challenges: sessionData.challenges.length,
+                    insights: sessionData.insights.length
+                  } : null,
+                  originalData: originalData ? {
+                    emotions: originalData.emotions.length,
+                    beliefs: originalData.beliefs.length,
+                    actions: originalData.action_items.length,
+                    challenges: originalData.challenges.length,
+                    insights: originalData.insights.length
+                  } : null
+                })
+                handleSave(true) // Force debug save
+              }} 
+              disabled={saving}
+              className="flex items-center gap-1"
+              variant="secondary"
+            >
+              {saving ? (
+                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span>{saving ? 'Debug Saving...' : 'Debug Save'}</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -1025,9 +1319,28 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
                 Add Emotion
               </Button>
             </div>
-            {sessionData.emotions.map((emotion, index) => (
-              <EmotionCard key={emotion.id || index} emotion={emotion} index={index} />
-            ))}
+            {sessionData.emotions.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Heart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No emotions detected</h3>
+                  <p className="text-gray-500 mb-4">
+                    {(sessionData.emotions.length + sessionData.beliefs.length + sessionData.action_items.length + sessionData.challenges.length + sessionData.insights.length) === 0 
+                      ? "Click 'Analyze Session' above to automatically detect emotions from your session."
+                      : "Add emotions manually or re-run the analysis."
+                    }
+                  </p>
+                  <Button onClick={addEmotion} variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Emotion
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              sessionData.emotions.map((emotion, index) => (
+                <EmotionCard key={emotion.id || index} emotion={emotion} index={index} />
+              ))
+            )}
           </TabsContent>
 
           <TabsContent value="beliefs" className="space-y-4">
@@ -1038,9 +1351,28 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
                 Add Belief
               </Button>
             </div>
-            {sessionData.beliefs.map((belief, index) => (
-              <BeliefCard key={belief.id || index} belief={belief} index={index} />
-            ))}
+            {sessionData.beliefs.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Brain className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No beliefs identified</h3>
+                  <p className="text-gray-500 mb-4">
+                    {(sessionData.emotions.length + sessionData.beliefs.length + sessionData.action_items.length + sessionData.challenges.length + sessionData.insights.length) === 0 
+                      ? "Click 'Analyze Session' above to automatically identify underlying beliefs."
+                      : "Add beliefs manually or re-run the analysis."
+                    }
+                  </p>
+                  <Button onClick={addBelief} variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Belief
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              sessionData.beliefs.map((belief, index) => (
+                <BeliefCard key={belief.id || index} belief={belief} index={index} />
+              ))
+            )}
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-4">
@@ -1051,9 +1383,28 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
                 Add Insight
               </Button>
             </div>
-            {sessionData.insights.map((insight, index) => (
-              <InsightCard key={insight.id || index} insight={insight} index={index} />
-            ))}
+            {sessionData.insights.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Lightbulb className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No insights discovered</h3>
+                  <p className="text-gray-500 mb-4">
+                    {(sessionData.emotions.length + sessionData.beliefs.length + sessionData.action_items.length + sessionData.challenges.length + sessionData.insights.length) === 0 
+                      ? "Click 'Analyze Session' above to automatically discover key insights."
+                      : "Add insights manually or re-run the analysis."
+                    }
+                  </p>
+                  <Button onClick={addInsight} variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Insight
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              sessionData.insights.map((insight, index) => (
+                <InsightCard key={insight.id || index} insight={insight} index={index} />
+              ))
+            )}
           </TabsContent>
 
           <TabsContent value="challenges" className="space-y-4">
@@ -1064,9 +1415,28 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
                 Add Challenge
               </Button>
             </div>
-            {sessionData.challenges.map((challenge, index) => (
-              <ChallengeCard key={challenge.id || index} challenge={challenge} index={index} />
-            ))}
+            {sessionData.challenges.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Mountain className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No challenges identified</h3>
+                  <p className="text-gray-500 mb-4">
+                    {(sessionData.emotions.length + sessionData.beliefs.length + sessionData.action_items.length + sessionData.challenges.length + sessionData.insights.length) === 0 
+                      ? "Click 'Analyze Session' above to automatically identify challenges."
+                      : "Add challenges manually or re-run the analysis."
+                    }
+                  </p>
+                  <Button onClick={addChallenge} variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Challenge
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              sessionData.challenges.map((challenge, index) => (
+                <ChallengeCard key={challenge.id || index} challenge={challenge} index={index} />
+              ))
+            )}
           </TabsContent>
 
           <TabsContent value="actions" className="space-y-4">
@@ -1077,9 +1447,28 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
                 Add Action
               </Button>
             </div>
-            {sessionData.action_items.map((action, index) => (
-              <ActionItemCard key={action.id || index} action={action} index={index} />
-            ))}
+            {sessionData.action_items.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Flag className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No action items created</h3>
+                  <p className="text-gray-500 mb-4">
+                    {(sessionData.emotions.length + sessionData.beliefs.length + sessionData.action_items.length + sessionData.challenges.length + sessionData.insights.length) === 0 
+                      ? "Click 'Analyze Session' above to automatically generate action items."
+                      : "Add action items manually or re-run the analysis."
+                    }
+                  </p>
+                  <Button onClick={addActionItem} variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Action
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              sessionData.action_items.map((action, index) => (
+                <ActionItemCard key={action.id || index} action={action} index={index} />
+              ))
+            )}
           </TabsContent>
         </Tabs>
       </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,7 +10,7 @@ import { Heart, Lightbulb, CheckSquare, Clock, Calendar, Loader2 } from "lucide-
 import MobileLayout from "@/components/mobile-layout"
 import { sessionsAPI, insightsAPI, actionItemsAPI } from "@/lib/api-client"
 
-export default function SessionInsightsPage({ params }: { params: { id: string } }) {
+export default function SessionInsightsPage({ params }: { params: Promise<{ id: string }> }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [session, setSession] = useState<any>(null)
@@ -18,7 +18,7 @@ export default function SessionInsightsPage({ params }: { params: { id: string }
   const [emotions, setEmotions] = useState<any[]>([])
   const [actionItems, setActionItems] = useState<any[]>([])
   const router = useRouter()
-  const sessionId = params.id
+  const { id: sessionId } = use(params)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,7 +26,7 @@ export default function SessionInsightsPage({ params }: { params: { id: string }
         setIsLoading(true)
 
         // Fetch session details
-        const sessionResponse = await sessionsAPI.getSessionById(Number(sessionId))
+        const sessionResponse = await sessionsAPI.getSessionById(sessionId)
         if (sessionResponse.data) {
           setSession(sessionResponse.data)
         }

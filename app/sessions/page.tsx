@@ -7,11 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, Plus, FileAudio, Calendar, Trash2 } from "lucide-react"
 import MobileLayout from "@/components/mobile-layout"
 import { sessionsAPI, type Session } from "@/lib/api-client"
+import { toast } from "react-hot-toast"
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export default function SessionsPage() {
           return
         }
 
-        setSessions(data || [])
+        setSessions((data as Session[]) || [])
       } catch (err) {
         console.error("Failed to fetch sessions:", err)
         setError("Failed to load sessions. Please try again.")
@@ -37,24 +39,31 @@ export default function SessionsPage() {
     fetchSessions()
   }, [])
 
-  const handleDeleteSession = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this session?")) {
+  const handleDeleteSession = async (sessionId: string, sessionTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${sessionTitle}"? This action cannot be undone.`)) {
       return
     }
 
     try {
-      const { error } = await sessionsAPI.deleteSession(id)
+      setDeletingSessionId(sessionId)
+      toast.loading('Deleting session...', { id: 'delete-session' })
 
-      if (error) {
-        setError(error)
-        return
+      const response = await sessionsAPI.deleteSession(sessionId)
+      
+      if (response.error) {
+        throw new Error(response.error)
       }
 
-      // Remove the deleted session from the state
-      setSessions(sessions.filter((session) => session.id !== id))
-    } catch (err) {
-      console.error("Failed to delete session:", err)
-      setError("Failed to delete session. Please try again.")
+      // Remove the session from the local state
+      setSessions(prevSessions => prevSessions.filter(session => session.id !== sessionId))
+      
+      toast.success('Session deleted successfully', { id: 'delete-session' })
+    } catch (error) {
+      console.error('Error deleting session:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete session'
+      toast.error(errorMessage, { id: 'delete-session' })
+    } finally {
+      setDeletingSessionId(null)
     }
   }
 
@@ -107,9 +116,14 @@ export default function SessionsPage() {
                       variant="ghost"
                       size="icon"
                       className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => handleDeleteSession(session.id)}
+                      onClick={() => handleDeleteSession(session.id, session.title)}
+                      disabled={deletingSessionId === session.id}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {deletingSessionId === session.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </CardHeader>
@@ -120,15 +134,9 @@ export default function SessionsPage() {
                       {formatDate(session.date)}
                     </div>
 
-                    {session.client_name && (
-                      <div className="text-sm">
-                        <span className="font-medium">Client:</span> {session.client_name}
-                      </div>
-                    )}
-
-                    {session.notes && (
+                    {session.description && (
                       <div className="text-sm mt-2">
-                        <span className="font-medium">Notes:</span> {session.notes}
+                        <span className="font-medium">Description:</span> {session.description}
                       </div>
                     )}
 

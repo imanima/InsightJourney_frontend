@@ -69,11 +69,12 @@ const SESSIONS = [
   // ... other sessions
 ]
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 300))
 
-  const session = SESSIONS.find((s) => s.id === params.id)
+  const { id } = await params
+  const session = SESSIONS.find((s) => s.id === id)
 
   if (!session) {
     return NextResponse.json({ message: "Session not found" }, { status: 404 })
