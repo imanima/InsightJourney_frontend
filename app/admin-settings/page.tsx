@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { Users } from "lucide-react"
+import Link from "next/link"
 import BaseLayout from "@/components/base-layout"
 
 // Mock data types
@@ -197,6 +199,18 @@ export default function AdminSettingsPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold mb-1">Admin Settings</h1>
           <p className="text-muted-foreground">Configure analysis elements and GPT settings</p>
+        </div>
+
+        {/* Navigation */}
+        <div className="mb-6">
+          <div className="flex gap-4">
+            <Button variant="outline" asChild>
+              <Link href="/admin-settings/users" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                User Management
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>

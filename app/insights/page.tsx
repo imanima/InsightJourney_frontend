@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Heart, Loader2, Brain, BarChart2, PieChart, LineChart, Trash2 } from "lucide-react"
+import { Calendar, Heart, Loader2, Brain, Sparkles, ArrowRight, TrendingUp } from "lucide-react"
 import MobileLayout from "@/components/mobile-layout"
 import { insightsAPI, sessionsAPI } from "@/lib/api-client"
-import InsightsOverviewAnalytics from "@/components/insights-overview-analytics"
-import EmotionPieChart from "@/components/emotion-pie-chart"
-import EmotionTrendsChart from "@/components/emotion-trends-chart"
 import { toast } from "react-hot-toast"
+import InsightsTimeline from "@/components/charts/insights-timeline"
+import EmotionTrends from "@/components/charts/emotion-trends"
+import TopicKnowledgeGraph from "@/components/charts/topic-knowledge-graph"
 
 export default function InsightsPage() {
   const [isLoading, setIsLoading] = useState(true)
@@ -33,7 +33,7 @@ export default function InsightsPage() {
           
           // For each session, fetch its analysis elements to get emotions/insights
           const sessionsWithElements = await Promise.all(
-            sessionsData.slice(0, 5).map(async (session: any) => {
+            sessionsData.map(async (session: any) => {
               try {
                 const elementsResponse = await sessionsAPI.getSessionElements(session.id)
                 return {
@@ -74,10 +74,6 @@ export default function InsightsPage() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
   }
 
-  const handleSessionClick = (sessionId: string) => {
-    router.push(`/insights/${sessionId}`)
-  }
-
   const handleDeleteSession = async (sessionId: string, sessionTitle: string) => {
     if (!confirm(`Are you sure you want to delete "${sessionTitle}"? This action cannot be undone.`)) {
       return
@@ -108,10 +104,10 @@ export default function InsightsPage() {
 
   if (isLoading) {
     return (
-      <MobileLayout title="Insights">
+      <MobileLayout title="Your Journey">
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">Loading insights...</span>
+          <span className="ml-2">Loading your insights...</span>
         </div>
       </MobileLayout>
     )
@@ -119,7 +115,7 @@ export default function InsightsPage() {
 
   if (error) {
     return (
-      <MobileLayout title="Insights">
+      <MobileLayout title="Your Journey">
         <div className="container px-4 py-6">
           <div className="p-4 bg-red-50 text-red-800 rounded-md">
             {error}
@@ -133,120 +129,217 @@ export default function InsightsPage() {
   }
 
   return (
-    <MobileLayout title="Insights">
+    <MobileLayout title="Your Journey">
       <div className="container px-4 py-6 pb-16">
-        {/* Improved Analyze Session Button */}
-        <div className="mb-6">
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100 hover:shadow-md transition-all">
-            <CardContent className="p-4">
+        {/* Hero Section - Journey Invitation */}
+        <div className="mb-8">
+          <Card className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-0 shadow-lg overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-100/20 via-purple-100/20 to-pink-100/20"></div>
+            <CardContent className="p-8 relative">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium text-lg mb-1">Ready to capture new insights?</h3>
-                  <p className="text-sm text-muted-foreground">Record and analyze your next session</p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-6 w-6 text-indigo-600" />
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                      Continue Your Journey
+                    </h1>
+                  </div>
+                  <p className="text-gray-600 text-lg leading-relaxed max-w-md">
+                    Every reflection adds depth to your story. Ready to explore more of yourself?
+                  </p>
+                  <Button
+                    onClick={() => router.push("/analyze-insights")}
+                    size="lg"
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <Brain className="mr-2 h-5 w-5" />
+                    Reflect & Discover
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  onClick={() => router.push("/record-insights")}
-                  size="lg"
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                >
-                  <Brain className="mr-2 h-5 w-5" />
-                  Analyze a New Session
-                </Button>
+                <div className="hidden md:block">
+                  <div className="w-32 h-32 bg-gradient-to-br from-indigo-200/50 to-purple-200/50 rounded-full flex items-center justify-center">
+                    <Brain className="h-16 w-16 text-indigo-500" />
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Sessions with Summaries */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <Calendar className="h-5 w-5 mr-2 text-blue-500" />
-              <h2 className="text-xl font-bold">Recent Sessions</h2>
+        {/* Journey Visualization */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Your Emotional Journey</h2>
+              <p className="text-gray-600">Visual insights into your personal growth and emotional patterns</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => router.push("/sessions")}>
-              View All
+            <Button variant="outline" size="sm" onClick={() => router.push("/insights/analytics")} className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Deep Dive
             </Button>
           </div>
-
+          
           {sessions.length === 0 ? (
-            <p className="text-center py-4 text-gray-500">No sessions found</p>
+            <Card className="border-2 border-dashed border-gray-200">
+              <CardContent className="p-12 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Heart className="h-12 w-12 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-700 mb-3">Your Journey Awaits</h3>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  Begin your path of self-discovery. Each session reveals new insights about your inner world.
+                </p>
+                <Button onClick={() => router.push("/analyze-insights")} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Start Your First Reflection
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
+            <>
+              {/* Timeline Charts */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-gray-800">
+                      <Calendar className="h-5 w-5 text-blue-600" />
+                      Insights Over Time
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <InsightsTimeline 
+                      sessions={sessions} 
+                      onSessionClick={(sessionId: string) => router.push(`/session-analysis/${sessionId}`)}
+                    />
+                  </CardContent>
+                </Card>
+                
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-red-50/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-gray-800">
+                      <Heart className="h-5 w-5 text-red-600" />
+                      Emotional Patterns
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <EmotionTrends 
+                      sessions={sessions}
+                      onSessionClick={(sessionId: string) => router.push(`/session-analysis/${sessionId}`)}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {/* Knowledge Graph */}
+              <div className="mb-8">
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-purple-50/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-gray-800">
+                      <Sparkles className="h-5 w-5 text-purple-600" />
+                      Topics & Connections
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Discover how different themes connect in your journey</p>
+                  </CardHeader>
+                  <CardContent>
+                    <TopicKnowledgeGraph 
+                      sessions={sessions}
+                      onTopicSelect={(topic: string, data: any) => {
+                        console.log('Selected topic:', topic, data)
+                        // Future: Could filter sessions by topic or show detailed view
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Recent Sessions - More Human */}
+        {sessions.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 mb-1">Recent Reflections</h2>
+                <p className="text-gray-600 text-sm">Your latest moments of discovery</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => router.push("/sessions")}>
+                View All
+              </Button>
+            </div>
+
             <div className="space-y-4">
-              {sessions.slice(0, 3).map((session) => {
+              {sessions.slice(0, 3).map((session, index) => {
                 const sessionId = session.id?.toString() || ""
 
                 // Get emotions from this session's analysis elements
                 const sessionElements = session.elements || {}
                 const sessionEmotions = sessionElements.emotions || []
-                const emotionsToShow = sessionEmotions.slice(0, 2)
-                const emotionsCount = sessionEmotions.length
+                const emotionsToShow = sessionEmotions.slice(0, 3)
 
                 return (
-                  <Card key={session.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
+                  <Card key={session.id} className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-r from-white to-gray-50/50">
+                    <CardContent className="p-6">
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">{session.title || `Session ${session.id}`}</h3>
-                          <p className="text-xs text-gray-500">
-                            {formatDate(session.timestamp || session.date || new Date().toISOString())}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-blue-500"
-                            onClick={() => router.push(`/session-analysis/${sessionId}`)}
-                          >
-                            View Analysis
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500"
-                            onClick={() => handleDeleteSession(sessionId, session.title || `Session ${session.id}`)}
-                            disabled={deletingSessionId === sessionId}
-                          >
-                            {deletingSessionId === sessionId ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                            <h3 className="font-semibold text-gray-800">{session.title || `Reflection ${index + 1}`}</h3>
+                            <Badge variant="outline" className="text-xs bg-gray-100">
+                              {formatDate(session.timestamp || session.date || new Date().toISOString())}
+                            </Badge>
+                          </div>
 
-                      {/* Compact Emotions Summary */}
-                      {emotionsToShow.length > 0 && (
-                        <div className="mt-2">
-                          <div className="flex items-center text-sm">
-                            <Heart className="h-3 w-3 mr-1 text-red-500" />
-                            <span className="font-medium text-sm">Emotions:</span>
-                            <div className="flex flex-wrap gap-1 ml-2">
-                              {emotionsToShow.map((emotion: any, index: number) => (
-                                <Badge key={index} variant="outline" className="text-xs bg-red-50 text-red-700">
-                                  {emotion.name || emotion.emotion || 'Unknown'}
-                                </Badge>
-                              ))}
-                              {emotionsCount > 2 && (
-                                <Badge variant="outline" className="text-xs bg-gray-100">
-                                  +{emotionsCount - 2} more
-                                </Badge>
-                              )}
+                          {/* Emotion Flow */}
+                          {emotionsToShow.length > 0 && (
+                            <div className="mb-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Heart className="h-4 w-4 text-red-500" />
+                                <span className="text-sm font-medium text-gray-700">Emotions experienced:</span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {emotionsToShow.map((emotion: any, idx: number) => (
+                                  <div key={idx} className="px-3 py-1 bg-gradient-to-r from-red-100 to-pink-100 text-red-700 rounded-full text-xs font-medium">
+                                    {emotion.name || emotion.emotion || 'Unknown'}
+                                  </div>
+                                ))}
+                                {sessionEmotions.length > 3 && (
+                                  <div className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+                                    +{sessionEmotions.length - 3} more
+                                  </div>
+                                )}
+                              </div>
                             </div>
+                          )}
+                          
+                          {/* Insights Summary */}
+                          <div className="flex gap-6 text-sm text-gray-600">
+                            {sessionElements.insights && sessionElements.insights.length > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Sparkles className="h-3 w-3 text-yellow-500" />
+                                {sessionElements.insights.length} insights
+                              </span>
+                            )}
+                            {sessionElements.action_items && sessionElements.action_items.length > 0 && (
+                              <span className="flex items-center gap-1">
+                                <ArrowRight className="h-3 w-3 text-green-500" />
+                                {sessionElements.action_items.length} actions
+                              </span>
+                            )}
                           </div>
                         </div>
-                      )}
-                      
-                      {/* Show insights and action items count */}
-                      <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                        {sessionElements.insights && sessionElements.insights.length > 0 && (
-                          <span>{sessionElements.insights.length} insights</span>
-                        )}
-                        {sessionElements.action_items && sessionElements.action_items.length > 0 && (
-                          <span>{sessionElements.action_items.length} action items</span>
-                        )}
+                        
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-indigo-600 hover:bg-indigo-50"
+                            onClick={() => router.push(`/session-analysis/${sessionId}`)}
+                          >
+                            Explore
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -254,86 +347,18 @@ export default function InsightsPage() {
               })}
 
               {sessions.length > 3 && (
-                <Button variant="outline" className="w-full" onClick={() => router.push("/sessions")}>
-                  View All Sessions
-                </Button>
+                <Card className="border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors">
+                  <CardContent className="p-6 text-center">
+                    <Button variant="ghost" className="w-full" onClick={() => router.push("/sessions")}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      View All {sessions.length} Reflections
+                    </Button>
+                  </CardContent>
+                </Card>
               )}
             </div>
-          )}
-        </div>
-
-        {/* Analytics Overview */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <BarChart2 className="h-5 w-5 mr-2 text-purple-500" />
-              <h2 className="text-xl font-bold">Analytics Overview</h2>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => router.push("/insights/analytics")}>
-              Full Analytics
-            </Button>
           </div>
-
-          <Card className="mb-4">
-            <CardContent className="p-4">
-              <h3 className="font-medium mb-4">Emotion Insights</h3>
-              <div className="h-64">
-                <InsightsOverviewAnalytics />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Mobile-friendly Analytics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Card className="overflow-hidden">
-              <CardHeader className="p-3 pb-1">
-                <CardTitle className="text-sm flex items-center">
-                  <PieChart className="h-4 w-4 mr-1 text-red-500" />
-                  Emotion Distribution
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-2">
-                <div className="h-28 flex items-center justify-center">
-                  <div className="w-full h-full">
-                    <EmotionPieChart
-                      data={[
-                        { emotion: "Anxiety", count: 24, percentage: 19.35 },
-                        { emotion: "Frustration", count: 20, percentage: 16.13 },
-                        { emotion: "Fear", count: 15, percentage: 12.37 },
-                        { emotion: "Happiness", count: 7, percentage: 5.91 },
-                        { emotion: "Other", count: 34, percentage: 46.24 },
-                      ]}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden">
-              <CardHeader className="p-3 pb-1">
-                <CardTitle className="text-sm flex items-center">
-                  <LineChart className="h-4 w-4 mr-1 text-blue-500" />
-                  Emotion Trends
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-2">
-                <div className="h-28 flex items-center justify-center">
-                  <div className="w-full h-full">
-                    <EmotionTrendsChart
-                      data={[
-                        { session: "S1", date: "10-01", emotion: "Anxiety", intensity: 4.0 },
-                        { session: "S2", date: "10-08", emotion: "Anxiety", intensity: 3.5 },
-                        { session: "S3", date: "10-15", emotion: "Anxiety", intensity: 3.0 },
-                        { session: "S4", date: "10-22", emotion: "Anxiety", intensity: 2.5 },
-                        { session: "S5", date: "10-29", emotion: "Anxiety", intensity: 2.0 },
-                      ]}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        )}
       </div>
     </MobileLayout>
   )

@@ -664,7 +664,7 @@ export default function SessionAnalysisPage({ params }: { params: Promise<{ id: 
             <h2 className="text-2xl font-bold mb-4">Session Not Found</h2>
             <p className="mb-6">We couldn't find the session you're looking for.</p>
             <Button asChild>
-              <Link href="/record-insights">Record New Insights</Link>
+              <Link href="/analyze-insights">Record New Insights</Link>
             </Button>
           </div>
         </div>

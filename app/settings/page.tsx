@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, Sun, LogOut, User, Shield, Download, Save, Loader2, X } from "lucide-react"
+import { Bell, Sun, LogOut, User, Shield, Download, Save, Loader2, X, Sparkles, Heart } from "lucide-react"
 import MobileLayout from "@/components/mobile-layout"
 import { toast } from "react-hot-toast"
 
@@ -30,6 +30,7 @@ interface UserSettings {
   temperature: number
   system_prompt_template?: string
   analysis_prompt_template?: string
+  home_page_version?: string
 }
 
 // GPT Model options - Updated with current OpenAI models (2024/2025)
@@ -106,6 +107,7 @@ export default function SettingsPage() {
     temperature: 0.7,
     system_prompt_template: "",
     analysis_prompt_template: "",
+    home_page_version: "empowerment",
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -182,6 +184,7 @@ export default function SettingsPage() {
           temperature: 0.7,
           system_prompt_template: "",
           analysis_prompt_template: "",
+          home_page_version: "empowerment",
         }
         setSettings(defaultSettings)
         setOriginalSettings(JSON.parse(JSON.stringify(defaultSettings))) // Deep copy
@@ -425,7 +428,7 @@ export default function SettingsPage() {
             </CardTitle>
             <CardDescription>Customize how the app looks</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="darkMode" className="flex flex-col gap-1">
                 <span>Dark Mode</span>
@@ -436,6 +439,52 @@ export default function SettingsPage() {
                 checked={settings.dark_mode} 
                 onCheckedChange={() => handleToggle("dark_mode")} 
               />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="homePageVersion" className="flex flex-col gap-1">
+                <span>Home Page Experience</span>
+                <span className="font-normal text-sm text-muted-foreground">
+                  Choose your preferred home page messaging style
+                </span>
+              </Label>
+              <Select
+                value={settings.home_page_version || "empowerment"}
+                onValueChange={(value) => handleSelectChange("home_page_version", value)}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select experience" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="empowerment">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-600" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">Personal Growth</span>
+                        <span className="text-xs text-muted-foreground">Self-discovery focused</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="therapy">
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-4 h-4 text-blue-600" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">Mental Health</span>
+                        <span className="text-xs text-muted-foreground">Clinical approach</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Home page version explanation */}
+            <div className="text-xs text-muted-foreground bg-gray-50 p-3 rounded-md">
+              {(settings.home_page_version || "empowerment") === "empowerment" ? (
+                <span>🌟 <strong>Personal Growth</strong> uses empowering language focused on self-discovery and emotional intelligence.</span>
+              ) : (
+                <span>🏥 <strong>Mental Health</strong> uses clinical language with therapeutic frameworks and professional support messaging.</span>
+              )}
             </div>
           </CardContent>
         </Card>

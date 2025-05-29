@@ -1098,11 +1098,29 @@ export const userAPI = {
     return fetchAPI("/auth/me")
   },
 
+  // Get user settings
+  getSettings() {
+    return fetchAPI("/settings/user")
+  },
+
   // Update user settings
   updateSettings(settings: UserSettings) {
-    return fetchAPI("/users/me/settings", {
+    return fetchAPI("/settings/user", {
       method: "PUT",
       body: JSON.stringify(settings),
+    })
+  },
+
+  deleteUser(id: string) {
+    return fetchAPI<{message: string}>(`/settings/admin/users/${id}`, {
+      method: "DELETE",
+    })
+  },
+
+  updateUserHomePageVersion(userId: string, version: string) {
+    return fetchAPI<{message: string, user_id: string, home_page_version: string}>(`/settings/admin/users/${userId}/home-page-version`, {
+      method: "PUT",
+      body: JSON.stringify({ home_page_version: version })
     })
   },
 }
@@ -1471,6 +1489,7 @@ export interface UserSettings {
     email: boolean
     push: boolean
   }
+  home_page_version?: string // "empowerment" or "therapy"
 }
 
 // Additional types for existing components
